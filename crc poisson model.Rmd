@@ -1,0 +1,67 @@
+---
+title: "Colorectal Cancer Screening Study Preliminary Analysis"
+author: "Sarah Watt"
+date: November 26, 2017
+output: pdf_document
+---
+```{r, echo=FALSE}
+# list of required packages
+packages = c("xlsx","dplyr")
+# load packages if installed, install and load otherwise
+for (package in packages) {
+  if (package %in% row.names(installed.packages())) {
+    do.call("library", list(package))
+  }
+  else {
+    install.packages(package)
+    do.call("library", list(package))
+  }
+}
+# read in data
+datta = read.xlsx("/Users/timyeyuqing/Documents/2017-2018/sta490/CRC Project/sta490_crc-data_2017-11-24 (1).xlsx",sheetIndex = 1, colIndex = c(1:4, 15, 21, 24:28))
+## Data cleaning
+# remove "L" from months_followup for pt 1343, convert months_followup to numeric
+datta$months_followup[datta$pt_id=="1343"] = NA
+datta$months_followup = as.numeric(datta$months_followup)
+# recode sex
+datta$sex[datta$sex=="f"] = "F"
+datta$sex[datta$sex=="M,"] = "M"
+# recode family history
+datta$family_history_crc[datta$family_history_crc=="0"]="no FHx"
+datta$family_history_crc[datta$family_history_crc=="1"]="FHx"
+# recode death status
+datta$death_status[datta$death_status=="0"]="alive"
+datta$death_status[datta$death_status=="1"]="died within 10 years"
+datta$death_status[datta$death_status=="2"]="died after 10 years"
+# recode colonoscopy indication
+datta$indication_clnscpy[datta$indication_clnscpy=="0"]="positive FS"
+datta$indication_clnscpy[datta$indication_clnscpy=="1"]="screening"
+datta$indication_clnscpy[datta$indication_clnscpy=="2"]="symptoms"
+datta$indication_clnscpy[datta$indication_clnscpy=="3"]="uncertain"
+datta$indication_clnscpy[datta$indication_clnscpy=="4"]="unknown"
+datta$indication_clnscpy[datta$indication_clnscpy=="5"]="no colonscopy"
+# add cancer cases and cancer mortality
+datta$cancer = "no cancer"
+datta$died_cancer = "no"
+patients_prevalent = c("196", "363", "525", "610", "829", "975", "1343", "1458")
+patients_incident = c("57", "200", "211", "296", "396", "402", "449", "553", "763", "773", "828", "963", "1045", "1116", "1138", "1150", "1318", "1335", "1364", "1433", "1447", "1573", "1665", "1683")
+died_from_crc = c("296", "402", "525", "610", "1116", "1138", "1343", "1364", "1447")
+datta$cancer[datta$pt_id %in% patients_prevalent] = "prevalent"
+datta$cancer[datta$pt_id %in% patients_incident] = "incident"
+datta$died_cancer[datta$pt_id %in% died_from_crc] = "died from crc"
+# clean data a bit more
+negfs_data = datta %>%
+  # filter to C and NC groups
+  filter(pt_group_ted=="NC" | pt_group_ted=="C") %>%
+  # remove pts under 40 (just the one with age 26) 
+  filter(age_baseline >=40) %>%
+  # remove positive FHx
+  filter(family_history_crc=="no FHx") %>%
+  # convert to factor types
+  mutate_each(funs(factor), pt_id, sex, family_history_crc, death_status, pt_group_ted, indication_clnscpy, cancer, died_cancer)
+```
+
+```{r, echo=FALSE}
+
+```
+
