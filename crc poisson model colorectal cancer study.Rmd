@@ -1,0 +1,145 @@
+---
+title: "Colorectal Cancer Screening Study Preliminary Analysis Jan 2018"
+author: "Yuqing Ye"
+date: Jan. 12th, 2018
+output: pdf_document
+---
+
+```{r}
+rawdata <- read.csv("/Users/timyeyuqing/Documents/2017-2018/sta490/CRC Project/Jan 16th data.csv")
+table(rawdata$family_history_crc)
+str(rawdata)
+library(dplyr)
+
+## Data cleaning
+# Fix errors
+rawdata$group[rawdata$X == "330"] = "AA"
+rawdata$group[rawdata$X == "782"] = "C"
+rawdata$indication_clnscpy[rawdata$X == "782"] = "1"
+rawdata$indication_clnscpy[rawdata$X == "1568"] = "4"
+
+# recode sex
+rawdata$sex[rawdata$SEX=="f"] = "F"
+rawdata$sex[rawdata$SEX=="M,"] = "M"
+# recode family history
+rawdata$family_history_crc[rawdata$FHx=="0"]="no FHx"
+rawdata$family_history_crc[rawdata$FHx=="1"]="FHx"
+# recode death status
+rawdata$death_status[rawdata$DIED=="0"]="alive"
+rawdata$death_status[rawdata$DIED=="1"]="died within 10 years"
+rawdata$death_status[rawdata$DIED=="2"]="died after 10 years"
+# recode colonoscopy indication
+rawdata$indication_clnscpy[rawdata$indication_clnscpy=="0"]="positive FS"
+rawdata$indication_clnscpy[rawdata$indication_clnscpy=="1"]="screening"
+rawdata$indication_clnscpy[rawdata$indication_clnscpy=="2"]="symptoms"
+rawdata$indication_clnscpy[rawdata$indication_clnscpy=="3"]="uncertain"
+rawdata$indication_clnscpy[rawdata$indication_clnscpy=="4"]="unknown"
+rawdata$indication_clnscpy[rawdata$indication_clnscpy=="5"]="no colonscopy"
+# add cancer cases and cancer mortality
+rawdata$cancer = "no cancer"
+rawdata$died_cancer = "no"
+patients_prevalent = c("196", "363", "525", "610", "829", "975", "1343", "1458")
+patients_incident = c("57", "200", "211", "296", "396", "402", "449", "553", "763", "773", "828", "963", "1045", "1116", "1138", "1150", "1318", "1335", "1364", "1433", "1447", "1573", "1665", "1683")
+died_from_crc = c("296", "402", "525", "610", "1116", "1138", "1343", "1364", "1447")
+rawdata$cancer[rawdata$pt_id %in% patients_prevalent] = "prevalent"
+rawdata$cancer[rawdata$pt_id %in% patients_incident] = "incident"
+rawdata$died_cancer[rawdata$pt_id %in% died_from_crc] = "died from crc"
+
+# clean data a bit more
+rawdata = rawdata %>%
+  #filter out no months follow up ones
+  filter(is.na(WHEN) == FALSE) %>%
+  # filter to C and NC groups
+  filter(group=="NC" | group=="C") %>%
+  # remove pts under 40 (just the one with age 26) 
+  filter(age_baseline >=40) %>%
+  # remove positive FHx
+  filter(family_history_crc=="no FHx") %>%
+  # remove prevalent cases
+  filter(cancer == "incident" | cancer == "no cancer") %>%
+  # convert to factor types
+  mutate_each(funs(factor), t, sex, family_history_crc, death_status, group, indication_clnscpy, cancer, died_cancer)
+
+posfs_data = rawdata %>%
+  # filter out C and NC groups
+  filter(group!="NC" & group!="C") %>%
+  # remove pts under 40 (just the one with age 26) 
+  filter(age_baseline >=40) %>%
+  # remove positive FHx
+  filter(family_history_crc=="no FHx") %>%
+  # convert to factor types
+  mutate_each(funs(factor), t, sex, family_history_crc, death_status, group, indication_clnscpy, cancer, died_cancer)
+```
+
+
+Incidence rate = The rate at which disease is occurring
+ 	$$\text{Incidence rate} = \frac{\text{number of people who develop a disease}}{\text{total amount of person-time when people were at risk of getting the disease}}$$
+
+Hence, the incident rate would be 24.07954 persons per 100,000 yrs
+
+
+
+
+
+```{r, echo=TRUE}
+
+cln <- as.factor(c("No", "No", "Yes","Yes"))
+can <- as.factor(c("No","Yes", "No","Yes"))
+y <- c(584,10,879,6)
+cln_can <- data.frame(y,cln,can)
+fit <- glm(y~cln*can,data=cln_can,family=poisson)
+fit
+summary(fit)
+
+
+#fisher
+test <- cbind(c(584,10),c(879,6))
+test
+rownames(test) <- c("No Cancer", "Cancer")
+colnames(test) <- c("No Cln", "Cln")
+fisher.test(test)
+
+```
+According to the contingency table, the Fisher exact test statistic value is 0.5224. The result is insignificant, colonoscopy and whether they got cancer is independent.  
+
+be clear the pvalues are from fishers test and the rates for 100,000 of followup are calculated separately and the pvalues dont correspond to that
+
+The poisson model would be $$\log(\mu) =\alpha +\beta_1 \mathbf{1}_{\text{cln=yes}} + \beta_2 \mathbf{1}_{\text{can=yes}} + \beta_3 \mathbf{1}_{\text{cln=yes}} \mathbf{1}_{\text{can=yes}}$$
+
+$\log(\mu)$ is log number of people. $\mathbf{1}_{\text{cln=yes}}$ is the indicator of whether colonoscopy is done within 10 years (it takes value 1 if yes and takes value 0 otherwise). $\mathbf{1}_{\text{can=yes}}$ is the indicator of whether the participants have cancer (it takes value 1 if yes and takes value 0 otherwise). $\alpha$ is the log number of people who did not do colonoscopy within 10 years and do not have cancer. 
+
+In the model summary, both colonoscpy and cancer are significant in predicting the number of people, however, their interation term is not significant. Therefore, there's no significant difference between take colonoscopy or not.
+
+From the summary output, the log number of people who get colonoscopy within 10 years is 0.66135 more than those who did not. The log number of people who have cancer is 3.76947 less than those who do not have cancer. 
+
+In Null deviance, the deviance  2.3796e+03 seems very large for 3 degrees of freedom, but the residual deviance has a much smaller deviance, only -2.8377e-13  for degrees of freedom of 0. We might also want to test the significance of the individual predictors.
+
+```{r}
+drop1(fit,test="Chi")
+```
+Since the p-value of the interaction between cln and can are higher than 0.05, we further confirm that the interaction is insignificant. 
+
+```{r,echo=TRUE}
+fit2 <- glm(y~cln+can,data=cln_can,family=poisson)
+summary(fit2)
+library(lmtest)
+lrtest(fit,fit2)
+```
+Since the likelihood ratio test has the p value of 0.4675, which is not significant. In this case, we choose a simpler model  over the complicated model. As a result, we choose model 2, which does not contain the interaction term. 
+
+about 3 times for incidence rate cancer rate in 100000 years
+
+patients who had colon. or symp., but colon was normal, they have neg. colon. p
+
+data problem: number of monsth follow up, number of family history exclusion, months of followup.
+
+
+low counts with poisson model
+inconsistency data cleaning, defining the treatement variable
+
+
+don't have complete months of follow up, so I'm not doing the rate analysis follow up.
+
+
+
+
