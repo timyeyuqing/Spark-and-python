@@ -131,7 +131,6 @@ xxxxxx =f"{pd1[xxxxxx].values[0]:.2%}"
                                      line=dict(color='firebrick',width=2)))
             fig5.add_trace(go.Scatter(x=data4.m_DmpCtl_i_suspVel_FL_mps,y=data4.DampForce,
                                     mode = 'markers',
-                                    name = '全辆车',
                                     marker=dict(
                                         size=3,
                                         color=data4.m_DmpCtl_damprCur_FL_A, #set color equal to a variable
