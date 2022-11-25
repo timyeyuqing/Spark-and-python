@@ -125,7 +125,7 @@ val ACC_cntValidStandStill_2_5 = {filled_pivot_df_standstill_cnt.join(Standstill
                                                                                                        .when($"ADAS_ xxxxxxxx " === 9, $"Object9Dist_min"))
                                                                                                        .filter($"acc_cntvalidstandstill_25".isNotNull)
                                                                 .withColumn("acc_cntvalidstandstill_valid",when($"acc_cntvalidstandstill_25" >=2.5 && $"acc_cntvalidstandstill_25" <=5.5,"valid"))
-                                                                .groupBy("vin","acc_start_time") //每个ACC循环内的最小跟停距离
+                                                                .groupBy("vin","acc_start_time") /
                                                                   .agg(count($"acc_cntvalidstandstill_25").as("ACC_cntValidStandStill_all"),
                                                                       count($"acc_cntvalidstandstill_valid").as("ACC_cntValidStandStill_2_5"))}
   //AWB介入+AEB未接入+3秒内加速
@@ -143,7 +143,6 @@ val ACC_cntValidStandStill_2_5 = {filled_pivot_df_standstill_cnt.join(Standstill
     .filter(((ACC_point_brake_AEB("val_start_time")-ACC_point_brake_AWB("val_start_time"))<= 2) && (ACC_point_brake_AEB("val_start_time") >= ACC_point_brake_AWB("val_start_time")))
     .groupBy("vin","acc_start_time")
     .agg(count("acc_start_time").as("AWB_AEB"))}
-  //ACC结束前5秒内最大减速度&&ACC结束前5秒内最大方向盘转角速度&&ACC循环期间开启LKA次数
   val ACC_aPrevLon_max_filter = {acc_sig_df_3.withColumn("acc_aprevlon_max_1",when($"sig_name" === "ACU_ xxxxxxxx " && ($"acc_end_time")-($"val_start_time") <=5 && ($"acc_end_time">=$"val_start_time"), $"sig_val"))
     .withColumn("acc_vprevsteang_max_5_1",when($"sig_name" === "EPS_ xxxxxxxx " && ($"acc_end_time")-($"val_start_time") <=5 && ($"acc_end_time">=$"val_start_time"),$"sig_val"))
     .withColumn("LKA_cntActive_during_ACC_1",when($"sig_name" === "ADAS_ xxxxxxxx " && $"sig_val" === 2,$"sig_val"))
@@ -209,21 +208,20 @@ val ACC_cntValidStandStill_2_5 = {filled_pivot_df_standstill_cnt.join(Standstill
   val aggItems2 = Seq(("ADAS_ xxxxxxxx ","acc_exit_reason",Seq("max"))   //ACC退出原因
   )
   val df_part2 = calSigAgg(whole_sigs,groupCols,aggItems2)
-  //ACC循环内最小车距&&join
   val ACC_lenStandStillDist_max_min = {df_part1.withColumn("acc_lendist_min",least($"ADAS_ xxxxxxxx _min",$"ADAS_ xxxxxxxx _min",$"ADAS_ xxxxxxxx _min",$"ADAS_ xxxxxxxx _min",$"ADAS_ xxxxxxxx _min",$"ADAS_ xxxxxxxx _min",$"ADAS_ xxxxxxxx _min",$"ADAS_ xxxxxxxx _min",$"ADAS_ xxxxxxxx _min"))
     .withColumn("cycle_dur",$"acc_end_time"-$"acc_start_time")
     .withColumn("veh_stpsgersbr_val",when($"rscm_stpsgersbr_tsum"/$"cycle_dur">0.5,1.0).otherwise(0.0))
     .withColumn("veh_strlsbr_val",when($"rscm_strlsbr_tsum"/$"cycle_dur">0.5,1.0).otherwise(0.0))
     .withColumn("veh_strrsbr_val",when($"rscm_strrsbr_tsum"/$"cycle_dur">0.5,1.0).otherwise(0.0))
-    .join(running_odometer,Seq("vin","time_start","time_end"),"left") //加入Running循环起止里程
-    .join(ACU_LongititudeAcc_cnt,Seq("vin","acc_start_time"),"left") //ACC循环内急刹车次数
-    .join(ACC_cntValidStandStill_2_5,Seq("vin","acc_start_time"),"left")//ACC循环跟停距离在2.5-5.5米之间的次数
-    .join(AWB_AEB_Acceleration_join,Seq("vin","acc_start_time"),"left") //ACC循环内误点刹次数（AWB+未开启AEB+3秒内踩加速踏板）
-    .join(AWB_AEB_no_acce_join,Seq("vin","acc_start_time"),"left") //ACC循环内误点刹次数，未踩加速踏板
-    .join(ACC_aPrevLon_max_filter,Seq("vin","acc_start_time"),"left") //ACC结束前5秒内最大减速度&&ACC结束前5秒内最大方向盘转角速度
-    .join(ACC_aNextLon_max_filter,Seq("vin","acc_end_time"),"left") //ACC结束后5秒内最大减速度&&ACC结束后5秒内最大方向盘转角速度
-    .join(ACC_unavailable,Seq("vin","time_start"),"left") //Running循环中ACC不可用信号次数
-    .join(fist_last_time_over_5,Seq("vin","time_start"),"left") //Running循环中第一次速度上5和最后一次速度上5的时长
+    .join(running_odometer,Seq("vin","time_start","time_end"),"left") 
+    .join(ACU_LongititudeAcc_cnt,Seq("vin","acc_start_time"),"left") 
+    .join(ACC_cntValidStandStill_2_5,Seq("vin","acc_start_time"),"left")
+    .join(AWB_AEB_Acceleration_join,Seq("vin","acc_start_time"),"left") /
+    .join(AWB_AEB_no_acce_join,Seq("vin","acc_start_time"),"left") 
+    .join(ACC_aPrevLon_max_filter,Seq("vin","acc_start_time"),"left") 
+    .join(ACC_aNextLon_max_filter,Seq("vin","acc_end_time"),"left") 
+    .join(ACC_unavailable,Seq("vin","time_start"),"left") 
+    .join(fist_last_time_over_5,Seq("vin","time_start"),"left") 
     .join(df_part2,Seq("vin","time_start","time_end","acc_start_time","acc_end_time"),"left")
     .select($"vin",$"time_start",$"time_end",$"acc_start_time",$"acc_end_time",($"veh_stpsgersbr_val" + $"veh_strlsbr_val" + $"veh_strrsbr_val" + 1).as("max_passenger"),$"Veh_lenOdo_start".as("run_lentotodo_start"),$"Veh_lenOdo_end".as("run_lentotodo_end"),$"acc_lentotodo_start",$"acc_lentotodo_end",$"acc_exit_reason_max",$"acc_average_speed_tavg",$"acc_cruise_speed_tavg",$"acc_lendist_min",$"acu_longititudeacc_cnt_3", $"lka_cntactive_during_acc",
       $"ACC_cntValidStandStill_2_5".as("acc_cntvalidstandstill_25"), $"AWB_AEB_Acceleration".as("awb_aeb_acceleration"),$"AWB_AEB".as("awb_aeb"),$"acc_aprevlon_max",$"acc_anextlon_max",$"acc_vprevsteang_max_5",$"acc_anextlon_max_5",$"ACC_cntValidStandStill_all".as("acc_cntvalidstandstill_all"),$"acc_unavailable_cnt",($"last_time_over_5"-$"first_time_over_5").as("runningcycl_speed_over_5_duration"))
