@@ -24,17 +24,14 @@ st.set_option('deprecation.showPyplotGlobalUse', False)
 chart_visual = st.sidebar.selectbox(' xxxxxx
 ',
                                     (' xxxxxx
-', '电磁阀性能','xxx'))
 if chart_visual == ' xxxxxx
 ':
     today = datetime.date.today()
     yesterday = today + datetime.timedelta(days=-1)
     the_day_before = today + datetime.timedelta(days=-2)
-    #phase = st.sidebar.multiselect("请选择试验车阶段（多选）", [xxxxxx
 )
     #all_options = st.sidebar.checkbox("全选")
     #if all_options: phase = [xxxxxx]
-    #悬架数据
     @st.cache(allow_output_mutation=True, ttl=1 * 60 * 60)
     def load_data():
      sql1="""
@@ -72,7 +69,6 @@ xxxxxx =f"{pd1[xxxxxx].values[0]:.2%}"
 
 
 
-    #减震器单车分析
     st.subheader(' xxxxxx ',anchor= xxxxxx)
     col1, col2, col3, col4 = st.columns((1,1,1,1.6))
     with col1:
@@ -82,11 +78,8 @@ xxxxxx =f"{pd1[xxxxxx].values[0]:.2%}"
     with col3:
         end_date_2 = st.date_input('结束日期（含当日）', today, key = 6)
     with col4:
-        loc=st.radio("请选择减震器位置：",("FL","FR","RL","RR"),key = 6)
     with col1:
-        all_vin = st.checkbox('全辆车' , value = True)
-        # 电流，速度 map出阻尼力
-    #x为电流 y为速度 z为阻尼力
+
     #front
     x_cur = [xxxxxx]
     y_vel xxxxxx]
@@ -98,14 +91,7 @@ xxxxxx =f"{pd1[xxxxxx].values[0]:.2%}"
         data = pd.read_csv(f'{csv_path}/cur_vel.csv')
         return data
     data2 = load_data()
-    #左前减震器数据
-    ff_FL=[f(x,y)[0] for x,y in zip(data2. xxxxxx)]
-    #右前减震器数据
-    ff_FR=[f(x,y)[0] for x,y in zip(data2.m_ xxxxxx)]
-    #左后减震器数据
-    ff_RL=[f_rear(x,y)[0] for x,y in zip(data2.m xxxxxx)]
-    #右后减震器数据
-    ff_RR=[f_rear(x,y)[0] for x,y in zip(data2.m_ xxxxxx)]
+
 
 
 
@@ -113,7 +99,6 @@ xxxxxx =f"{pd1[xxxxxx].values[0]:.2%}"
     data5 = pd.DataFrame (ff_FR, columns = ['N'])
     data7 = pd.DataFrame (ff_RL, columns = ['N'])
     data9 = pd.DataFrame (ff_RR, columns = ['N'])
-    #新df，x1为速度,x2为阻尼力，x3为电流
     data4 = pd.concat([data2[' xxxxxx], data3['N'], data2[xxxxxx FL_A']], axis=1, keys=['m_ xxxxxx, 'DampForce','m_ xxxxxx])
     data6 = pd.concat([data2['m_ xxxxxx s'], data5['N'], data2['m_ xxxxxx _FR_A']], axis=1, keys=['m_ xxxxxx, 'DampForce','m_ xxxxxx])
     data8 = pd.concat([data2['m_ xxxxxx mps'], data7['N'], data2['m_ xxxxxx _A']], axis=1, keys=['m_DmpCtl_i_suspVel_RL_mps', 'DampForce','m_ xxxxxx _A'])
@@ -122,10 +107,8 @@ xxxxxx =f"{pd1[xxxxxx].values[0]:.2%}"
 
 
 
-        #ZF 电流与阻尼力
     df2 = pd.DataFrame(dict(
             x = xxxxxx            ))
-    #TN 电流与阻尼力
     df3 = pd.DataFrame(dict(
             xxxxxx xxxxxx xxxxxx xxxxxx xxxxxx xxxxxx    if all_vin:
         if loc == 'FL':
@@ -156,7 +139,7 @@ xxxxxx =f"{pd1[xxxxxx].values[0]:.2%}"
                                         showscale=True,reversescale=True
                                         ))
                                     )
-            fig5.update_yaxes(title_text = "<b>阻尼力(N)<b>", title_standoff=5,side = "left")
+            fig5.update_yaxes(title_text = "<b>(N)<b>", title_standoff=5,side = "left")
             fig5.update_layout(xaxis_range=[-1.8,1.8],
                                yaxis_range=[-5000,3000],
                                height=500,width=800,
@@ -167,7 +150,6 @@ xxxxxx =f"{pd1[xxxxxx].values[0]:.2%}"
                                       x=0.99
                                   ),
                                margin=dict(l=0, r=200,b=40,t=20),
-                               xaxis_title="<b>减震器速度(m/s)<b>"
                                              )
             fig5.show()
             st.plotly_chart(fig5,height=600,width=900,use_container_width=True)
@@ -191,7 +173,7 @@ xxxxxx =f"{pd1[xxxxxx].values[0]:.2%}"
                                      line=dict(color='firebrick',width=2)))
             fig6.add_trace(go.Scatter(x=data6.m_DmpCtl_i_suspVel_FR_mps,y=data6.DampForce,
                                     mode = 'markers',
-                                    name = '全辆车',
+                                    name = '',
                                     marker=dict(
                                         size=3,
                                         color=data6.m_DmpCtl_damprCur_FR_A, #set color equal to a variable
@@ -199,7 +181,7 @@ xxxxxx =f"{pd1[xxxxxx].values[0]:.2%}"
                                         showscale=True,reversescale=True
                                         ))
                                     )
-            fig6.update_yaxes(title_text = "<b>阻尼力(N)<b>", title_standoff=5)
+            fig6.update_yaxes(title_text = "<b>(N)<b>", title_standoff=5)
             fig6.update_layout(xaxis_range=[-1.8,1.8],
                                yaxis_range=[-5000,3000],
                                height=500,width=800,
@@ -210,7 +192,6 @@ xxxxxx =f"{pd1[xxxxxx].values[0]:.2%}"
                                       x=0.99
                                   ),
                                margin=dict(l=0, r=200,b=40,t=20),
-                               xaxis_title="<b>减震器速度(m/s)<b>"
                                              )
             fig6.show()
             st.plotly_chart(fig6,height=600,width=900,use_container_width=True)
@@ -234,7 +215,6 @@ xxxxxx =f"{pd1[xxxxxx].values[0]:.2%}"
                                     line=dict(color='firebrick',width=2)))
             fig7.add_trace(go.Scatter(x=data8.m_DmpCtl_i_suspVel_RL_mps,y=data8.DampForce,
                                     mode = 'markers',
-                                    name = '全辆车',
                                     marker=dict(
                                         size=3,
                                         color=data8.m_DmpCtl_damprCur_RL_A, #set color equal to a variable
@@ -242,7 +222,6 @@ xxxxxx =f"{pd1[xxxxxx].values[0]:.2%}"
                                         showscale=True,reversescale=True
                                         ))
                                     )
-            fig7.update_yaxes(title_text = "<b>阻尼力(N)<b>", title_standoff=5)
             fig7.update_layout(xaxis_range=[-1.8,1.8],
                                yaxis_range=[-5000,3000],
                                height=500,width=800,
@@ -277,7 +256,6 @@ xxxxxx =f"{pd1[xxxxxx].values[0]:.2%}"
                                     line=dict(color='firebrick',width=2)))
             fig8.add_trace(go.Scatter(x=data10.m_DmpCtl_i_suspVel_RR_mps,y=data10.DampForce,
                                     mode = 'markers',
-                                    name = '全辆车',
                                     marker=dict(
                                         size=3,
                                         color=data10.m_DmpCtl_damprCur_RR_A, #set color equal to a variable
@@ -313,7 +291,6 @@ xxxxxx =f"{pd1[xxxxxx].values[0]:.2%}"
                                      line=dict(color='royalblue',width=2)))
             fig9.add_trace(go.Scatter(x=data4.m_DmpCtl_i_suspVel_FL_mps,y=data4.DampForce,
                                     mode = 'markers',
-                                    name = '全辆车',
                                     marker=dict(
                                         size=3,
                                         color=data4.m_DmpCtl_damprCur_FL_A, #set color equal to a variable
@@ -343,7 +320,6 @@ xxxxxx =f"{pd1[xxxxxx].values[0]:.2%}"
                                      line=dict(color='royalblue',width=2)))
             fig10.add_trace(go.Scatter(x=data6.m_DmpCtl_i_suspVel_FR_mps,y=data6.DampForce,
                                     mode = 'markers',
-                                    name = '全辆车',
                                     marker=dict(
                                         size=3,
                                         color=data6.m_DmpCtl_damprCur_FR_A, #set color equal to a variable
@@ -351,13 +327,11 @@ xxxxxx =f"{pd1[xxxxxx].values[0]:.2%}"
                                         showscale=True,reversescale=True
                                         ))
                                     )
-            fig10.update_yaxes(title_text = "<b>阻尼力(N)<b>", title_standoff=5)
             fig10.update_layout(xaxis_range=[-1.8,1.8],
                                yaxis_range=[-5000,3000],
                                height=500,width=800,
                                showlegend = False,
                                margin=dict(l=0, r=200,b=40,t=20),
-                               xaxis_title="<b>减震器速度(m/s)<b>"
                                              )
             fig10.show()
             st.plotly_chart(fig10,height=600,width=900,use_container_width=True)
@@ -384,8 +358,6 @@ xxxxxx =f"{pd1[xxxxxx].values[0]:.2%}"
     pd1 = load_data5()
     # xxxxxxx cnt distinct vin
     cnt = pd1['cnt'].values[0]
-    dt =  pd1['dt'].values[0]
-    st.subheader('`%s`漏气`%s`例'%(dt,cnt))
     #ETL
     @st.cache(allow_output_mutation=True, ttl=0.5 * 60 * 60)
     def load_data6():
@@ -423,7 +395,6 @@ xxxxxxx xxxxxxx xxxxxxx xxxxxxx    """
         return df
 
     
-    # 获取原始信号
     @st.cache(allow_output_mutation=True, ttl=0.5 * 60 * 60)
     def get_sig_data(vin, start_date, end_date, sigs):
         sql = f"""
@@ -539,7 +510,6 @@ xxxxxxx xxxxxxx xxxxxxx xxxxxxx    """
         fig1.show()
         st.plotly_chart(fig1,height=600,width=900,use_container_width=True)
 
-        st.subheader("漏气车辆清单")
         pd6 = pd5.loc[(pd5['dt'] >= start_date_1) & (pd5['dt'] <= end_date_1)]
 
         gd = GridOptionsBuilder.from_dataframe(pd6)   
@@ -668,7 +638,6 @@ xxxxxxx xxxxxxx xxxxxxx xxxxxxx    """
         selected_rows = pd.DataFrame(selected_rows)
 
         if len(selected_rows) != 0:
-            st.subheader("漏气车辆明细数据")
             vin=selected_rows["vin"].values[0]
             dt=selected_rows["dt"].values[0]
             pd7 = pd2.loc[(pd2['dt'] == dt) & (pd2['vin'] == vin)]
@@ -726,7 +695,7 @@ xxxxxxx xxxxxxx xxxxxxx xxxxxxx    """
         # set up plotly figure
         fig1.add_trace(go.Scatter(x=pd3['month_short_desc'], y=pd3['cnt'],
                                  mode = 'lines',
-                                 name= '每日漏气车数', line_shape = 'linear',
+                                 name= '', line_shape = 'linear',
                                  line=dict(color='mediumvioletred',width=2)))
         fig1.update_layout(
                            height=400,width=900,
@@ -743,7 +712,7 @@ xxxxxxx xxxxxxx xxxxxxx xxxxxxx    """
         fig1.show()
         st.plotly_chart(fig1,height=600,width=900,use_container_width=True)
 
-        st.subheader("漏气车辆清单")
+        st.subheader("")
         pd6 = pd5.loc[(pd5['dt'] >= start_date_1) & (pd5['dt'] <= end_date_1)]
 
         gd = GridOptionsBuilder.from_dataframe(pd6)   
@@ -764,7 +733,7 @@ xxxxxxx xxxxxxx xxxxxxx xxxxxxx    """
         selected_rows = pd.DataFrame(selected_rows)
 
         if len(selected_rows) != 0:
-            st.subheader("漏气车辆明细数据")
+            st.subheader("")
             vin=selected_rows["vin"].values[0]
             dt=selected_rows["dt"].values[0]
             pd7 = pd2.loc[(pd2['dt'] == dt) & (pd2['vin'] == vin)]
@@ -805,7 +774,7 @@ xxxxxxx xxxxxxx xxxxxxx xxxxxxx    """
                     plot_pivot_sigs(pivot_df, ["xxxxxxx ", " xxxxxxx "," xxxxxxx "," xxxxxxx "], start_time, end_time),
                 use_container_width=True)
             
-    st.subheader('大冲击工况',anchor= xxxxxxx)
+    st.subheader('',anchor= xxxxxxx)
     today = datetime.date.today()
     yesterday = today + datetime.timedelta(days=-1)
     date = st.date_input('日期', yesterday,key=21)
